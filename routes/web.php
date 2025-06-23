@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProdutoController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\PedidoController; 
 
 /*
 |--------------------------------------------------------------------------
@@ -41,4 +42,7 @@ Route::middleware('auth')->group(function () {
     // CRUD de Usuários
     // Esta única linha também cria todas as rotas para o CRUD de usuários
     Route::resource('usuarios', UsuarioController::class);
+
+    // CRUD de Pedidos
+    Route::resource('pedidos', PedidoController::class);
 });
