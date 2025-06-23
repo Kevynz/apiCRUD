@@ -2,6 +2,7 @@
 
 - coloca em um dos terminais o seguinte: php artisan serve
 - no segundo terminal vc coloca: npm run dev
+- coloque no navegador o seguinte link: http://127.0.0.1:8000/
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
