@@ -1,86 +1,68 @@
-.<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lista de Produtos</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-</head>
-<body>
+{{-- O ideal é que este arquivo esteja em resources/views/produtos/index.blade.php --}}
 
-  <!-- Navbar Responsiva -->
-  <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="#">ProductManager</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav">
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('produtos.index') }}">Lista de Produtos</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('usuarios.index') }}">Lista de Usuários</a>
-                </li>
-            </ul>
+@extends('layouts.app')
 
-            <!-- Logout no Menu -->
-            <ul class="navbar-nav ml-auto">
-                <li class="nav-item">
-                    <a class="nav-link btn btn-danger text-white" href="#" 
-                       onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                       Sair
-                    </a>
-                    <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
-                        @csrf
-                    </form>
-                </li>
-            </ul>
-        </div>
-    </nav>
-
-    <div class="container mt-5">
-        <h1 class="mb-4">Lista de Produtos</h1>
-
-
-       
-
-
-
-        <a href="{{ route('produtos.create') }}" class="btn btn-primary mb-3">Adicionar Novo Produto</a>
-
-        <table class="table table-striped">
-            <thead class="thead-dark">
-                <tr>
-                    <th>ID</th>
-                    <th>Nome</th>
-                    <th>Custo</th>
-                    <th>Preço</th>
-                    <th>Quantidade</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($produtos as $produto)
-                    <tr>
-                        <td>{{ $produto->id }}</td>
-                        <td>{{ $produto->nome }}</td>
-                        <td>{{ $produto->custo }}</td>
-                        <td>{{ $produto->preco }}</td>
-                        <td>{{ $produto->quantidade }}</td>
-                        <td>
-                            <a href="{{ route('produtos.show', $produto->id) }}" class="btn btn-info btn-sm">Ver</a>
-                            <a href="{{ route('produtos.edit', $produto->id) }}" class="btn btn-warning btn-sm">Editar</a>
-                            <a href="{{ route('produtos.delete', $produto->id) }}" class="btn btn-danger btn-sm">Excluir</a>
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
+@section('content')
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Lista de Produtos</h1>
+        <a href="{{ route('produtos.create') }}" class="btn btn-primary">Adicionar Novo Produto</a>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.2/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-</body>
-</html>
+    {{-- 2. Bloco para exibir mensagens de sucesso (como "Produto excluído com sucesso!") --}}
+    @if (session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Preço</th>      {{-- 3. Cabeçalho corrigido --}}
+                        <th>Estoque</th>    {{-- 3. Cabeçalho corrigido --}}
+                        <th width="250px">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($produtos as $produto)
+                        <tr>
+                            <td>{{ $produto->id }}</td>
+                            <td>{{ $produto->nome }}</td>
+                            <td>R$ {{ number_format($produto->preco, 2, ',', '.') }}</td> {{-- 3. Dado corrigido e formatado --}}
+                            <td>{{ $produto->estoque }}</td>                            {{-- 3. Dado corrigido --}}
+                            <td>
+                                <a href="{{ route('produtos.show', $produto->id) }}" class="btn btn-info btn-sm">Ver</a>
+                                <a href="{{ route('produtos.edit', $produto->id) }}" class="btn btn-warning btn-sm">Editar</a>
+
+                                {{-- 1. BOTÃO EXCLUIR CORRIGIDO --}}
+                                <form action="{{ route('produtos.destroy', $produto->id) }}" method="POST"
+                                      onsubmit="return confirm('Você tem certeza que deseja excluir este produto?');"
+                                      style="display:inline;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-danger btn-sm">Excluir</button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        {{-- Mensagem para caso não haja produtos --}}
+                        <tr>
+                            <td colspan="5" class="text-center">Nenhum produto cadastrado ainda.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer">
+            {{-- 4. Links da paginação --}}
+            {{ $produtos->links() }}
+        </div>
+    </div>
+</div>
+@endsection

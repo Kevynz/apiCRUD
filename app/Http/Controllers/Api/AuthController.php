@@ -7,60 +7,92 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Auth\Events\Registered;
 
 class AuthController extends Controller
 {
     /**
-     * Lida com a tentativa de registro de um novo usuário.
+     * Mostra a view do formulário de cadastro.
+     */
+    public function showRegistrationForm()
+    {
+        return view('register'); // Garanta que você tenha o arquivo resources/views/register.blade.php
+    }
+
+    /**
+     * Mostra a view do formulário de login.
+     */
+    public function showLoginForm()
+    {
+        return view('login'); // Garanta que você tenha o arquivo resources/views/login.blade.php
+    }
+
+    /**
+     * Processa o registro de um novo usuário para o fluxo WEB.
      */
     public function register(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        // Valida os dados que chegam do formulário
+        $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 400);
-        }
-
+        // Cria o usuário no banco de dados
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
 
-        $token = $user->createToken('auth-token')->plainTextToken;
+        // Dispara o evento padrão de registro do Laravel
+        event(new Registered($user));
 
-        return response()->json(['user' => $user, 'access_token' => $token], 201);
+        // Faz o login do usuário que acabou de se registrar
+        Auth::login($user);
+
+        // Redireciona o usuário para a página inicial (ou um painel)
+        return redirect()->route('home');
     }
 
     /**
-     * Lida com a tentativa de login.
+     * Processa a tentativa de login para o fluxo WEB.
      */
     public function login(Request $request)
     {
-        $credentials = $request->only('email', 'password');
+        // Valida as credenciais
+        $credentials = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
 
-        if (!Auth::attempt($credentials)) {
-            return response()->json(['message' => 'Credenciais inválidas'], 401);
+        // Tenta autenticar o usuário
+        if (Auth::attempt($credentials)) {
+            // Regenera a sessão para segurança
+            $request->session()->regenerate();
+
+            // Redireciona para a página que o usuário tentou acessar antes, ou para a home
+            return redirect()->intended(route('home'));
         }
 
-        $user = $request->user();
-        $token = $user->createToken('auth-token')->plainTextToken;
-
-        return response()->json(['user' => $user, 'access_token' => $token]);
+        // Se a autenticação falhar, volta para a página anterior (login) com uma mensagem de erro.
+        return back()->withErrors([
+            'email' => 'As credenciais fornecidas não correspondem aos nossos registros.',
+        ])->onlyInput('email');
     }
 
     /**
-     * Lida com o logout do usuário.
+     * Processa o logout do usuário para o fluxo WEB.
      */
     public function logout(Request $request)
     {
-        $request->user()->tokens()->delete();
+        Auth::logout();
 
-        return response()->json(['message' => 'Logout realizado com sucesso.']);
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        // Redireciona o usuário para a página inicial
+        return redirect('/');
     }
 }
